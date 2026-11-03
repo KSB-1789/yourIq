@@ -2,20 +2,70 @@
 
 A clinical-grade, psychometrically calibrated cognitive assessment and brain training platform. Designed with clean, minimalist aesthetics, generous typography, and zero subscription paywalls, marketing funnels, or user data harvesting.
 
+🔗 **Live Application:** [Standardized Cognitive Assessment — Wechsler Scale Norming](https://youriq.karann.workers.dev/)
+
+---
+
+## 🚀 Quickstart & Setup Guide
+
+### Prerequisites
+* [Node.js](https://nodejs.org/) (version 18.0 or higher)
+* [pnpm](https://pnpm.io/) (version 8 or higher) — recommended
+
+### 1. Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/KSB-1789/yourIq.git
+
+# Navigate into the project folder
+cd yourIq
+
+# Install project dependencies
+pnpm install
+```
+
+### 2. Development Server
+
+```bash
+pnpm dev
+```
+Open `http://localhost:5173` in your browser. The Vite development server features instant Hot Module Replacement (HMR).
+
+### 3. Production Build & Preview
+
+```bash
+# Compile and bundle assets for production
+pnpm run build
+
+# Preview the production build locally
+pnpm run preview
+```
+
+### 4. Linting & Type Checking
+
+```bash
+# Type check TypeScript code (Strict Mode)
+pnpm exec tsc -b
+
+# Fast static linting with Oxlint
+pnpm run lint
+```
+
 ---
 
 ## 🎯 Purpose & Vision
 
-Most online intelligence tests lock unredacted results behind monthly checkout paywalls or present elementary puzzles that fail to test actual high-range cognitive ceilings. 
+Most commercial cognitive test sites lock unredacted scores behind hidden monthly subscriptions or present elementary puzzles that fail to test high-range cognitive ceilings.
 
 This platform provides:
-1. **Clinical Rigor**: Authentic psychometric evaluation adhering to the Cattell-Horn-Carroll (CHC) theory and Wechsler adult distribution standard ($\mu = 100, \sigma = 15$).
-2. **Delayed Interference Testing**: A 3-step delayed memory recall framework that tests working memory trace decay under continuous problem-solving load.
-3. **100% Open & Client-Side**: All scoring, item randomization, and history tracking run locally in the candidate's browser with zero trackers or server uploads.
+1. **Clinical Psychometric Rigor**: Calibrated on the Cattell-Horn-Carroll (CHC) theory and Wechsler adult norming standard ($\mu = 100, \sigma = 15$).
+2. **Delayed Interference Testing**: An authentic 3-step delayed memory recall framework that tests working memory trace decay under continuous problem-solving load.
+3. **100% Open & Client-Side**: All scoring algorithms, item randomization, and history tracking compute locally in your browser with zero trackers or server uploads.
 
 ---
 
-## ✨ Features
+## ✨ Comprehensive Features
 
 ### 1. Progressive Matrix Assessment (3 Phases • 20 Core Items)
 * **Phase 1: Abstract & Spatial Logic (Questions 1–8)**: Bivariate Latin square permutations, dual-axis rotational acceleration, 3D net folding with chiral reflections, and centripetal shell stripping.
@@ -25,8 +75,8 @@ This platform provides:
 
 ### 2. 3-Step Delayed Memory Recall Protocol
 Separate from the 20 cognitive questions, candidates undergo a structured 3-phase memory interference battery:
-* **Step 1 (Verbal Word Trace)**: Candidate commits a vocabulary word (e.g., `LABYRINTH`, `OBSIDIAN`, `SOLSTICE`) to memory before Question 1. Prompted for recall after Question 8 against morphological distractors.
-* **Step 2 (Alphanumeric Trace)**: Candidate commits an alphanumeric code (e.g., `8492-BX`, `7319-KT`) before Question 9. Tested after Question 16 against deceptive transposition foils.
+* **Step 1 (Verbal Word Trace)**: Candidate commits an evocative vocabulary word (e.g., `LABYRINTH`, `OBSIDIAN`, `SOLSTICE`) to memory before Question 1. Prompted for recall after Question 8 against morphological and semantic distractors.
+* **Step 2 (Alphanumeric Trace)**: Candidate commits an alphanumeric sequence (e.g., `8492-BX`, `7319-KT`) before Question 9. Tested after Question 16 against deceptive transposition foils.
 * **Step 3 (Compound Key Trace)**: Candidate commits a compound identifier (e.g., `COBALT-815`, `PLATINUM-637`) before Question 17. Tested after Question 20 to gauge resistance to retroactive cognitive interference under high-range load.
 * Evaluates the **Working Memory Index (WMI)** and retention rate (0% to 100%).
 
@@ -58,56 +108,6 @@ Targeted daily drills with specialized normative diagnostic reports:
 * **Icons**: Lucide React
 * **Math / Psychometrics**: Gaussian Error Function (`erf`), Abramowitz & Stegun approximation
 * **Linter**: Oxlint (Oxc)
-
----
-
-## 🚀 Setup & Development Guide
-
-### Prerequisites
-* [Node.js](https://nodejs.org/) (version 18.0 or higher)
-* [pnpm](https://pnpm.io/) (version 8 or higher) — recommended
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/KSB-1789/cognitive-assessment.git
-
-# Navigate into the project folder
-cd cognitive-assessment
-
-# Install project dependencies
-pnpm install
-```
-
-### Development Server
-
-```bash
-pnpm dev
-```
-Open `http://localhost:5173` in your browser. The Vite development server features instant Hot Module Replacement (HMR).
-
-### Linting & Type Checking
-
-```bash
-# Type check TypeScript code
-pnpm exec tsc -b
-
-# Fast static linting with Oxlint
-pnpm run lint
-```
-
-### Production Build
-
-```bash
-# Compile and bundle assets for production
-pnpm run build
-
-# Preview the production build locally
-pnpm run preview
-```
-
-The optimized static build is emitted to the `dist/` folder and is ready to deploy on GitHub Pages, Vercel, Netlify, or any static web host.
 
 ---
 
