@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, RotateCcw, Brain, Check, Delete, ArrowRight } from 'lucide-react';
 import { zToPercentile } from '../../utils/scoring';
+import { saveGymScore } from '../../utils/gymStorage';
 
 interface SequenceRecallProps {
   onBack: () => void;
@@ -97,6 +98,7 @@ export const SequenceRecallExercise: React.FC<SequenceRecallProps> = ({ onBack, 
 
       if (remainingLives <= 0) {
         setPhase('summary');
+        saveGymScore('sequence_recall', mode === 'reverse' ? 'Reverse Span' : 'Digit Span', `${peakSpan} Digits`, peakSpan);
         if (onFinish) onFinish(peakSpan, score);
       } else {
         setPhase('wrong');

@@ -4,6 +4,7 @@ import { MatrixCellSvg } from '../MatrixSvg';
 import { QUESTIONS } from '../../data/questions';
 import type { Question } from '../../types';
 import { zToPercentile } from '../../utils/scoring';
+import { saveGymScore } from '../../utils/gymStorage';
 
 interface PatternBlitzProps {
   onBack: () => void;
@@ -43,6 +44,12 @@ export const PatternBlitzExercise: React.FC<PatternBlitzProps> = ({ onBack, onFi
 
     return () => clearInterval(timer);
   }, [isActive]);
+
+  useEffect(() => {
+    if (!isActive && totalAnswered > 0) {
+      saveGymScore('pattern_blitz', 'Blitz Score', `${score} pts`, score);
+    }
+  }, [isActive, totalAnswered, score]);
 
   const currentQ = shuffledQuestions[currentIndex];
 

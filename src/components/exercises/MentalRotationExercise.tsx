@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, RotateCcw, Clock, CheckCircle2, XCircle, Brain } from 'lucide-react';
 import { zToPercentile } from '../../utils/scoring';
+import { saveGymScore } from '../../utils/gymStorage';
 
 interface MentalRotationProps {
   onBack: () => void;
@@ -58,6 +59,12 @@ export const MentalRotationExercise: React.FC<MentalRotationProps> = ({ onBack, 
 
     return () => clearInterval(timer);
   }, [isActive]);
+
+  useEffect(() => {
+    if (!isActive && totalAttempted > 0) {
+      saveGymScore('mental_rotation', 'Sprint Score', `${score} pts`, score);
+    }
+  }, [isActive, totalAttempted, score]);
 
   const handleAnswer = (userSaysSame: boolean) => {
     if (!isActive) return;

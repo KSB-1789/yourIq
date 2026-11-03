@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { TestResult } from '../types';
 import {
   ArrowRight,
   Clock,
@@ -18,9 +19,16 @@ import { MatrixCellSvg } from './MatrixSvg';
 interface WelcomeScreenProps {
   onStart: () => void;
   questionCount: number;
+  latestResult?: TestResult | null;
+  onOpenHistory?: () => void;
 }
 
-export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, questionCount }) => {
+export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
+  onStart,
+  questionCount,
+  latestResult,
+  onOpenHistory,
+}) => {
   const [activeSampleTab, setActiveSampleTab] = useState<'matrix' | 'series'>('matrix');
   const [showDemoSolution, setShowDemoSolution] = useState(false);
 
@@ -48,6 +56,18 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStart, questionC
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
         {/* Left Column: Authoritative Core Value Proposition */}
         <div className="lg:col-span-7 flex flex-col justify-center text-left">
+          {latestResult && onOpenHistory && (
+            <div className="mb-4">
+              <button
+                onClick={onOpenHistory}
+                className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/80 px-3.5 py-1.5 text-xs font-semibold text-blue-800 hover:bg-blue-100 transition shadow-2xs"
+              >
+                <Award className="h-3.5 w-3.5 text-blue-600" />
+                <span>Previous Assessment: <strong>IQ {latestResult.iqScore}</strong> ({latestResult.percentile}th percentile) • View History</span>
+              </button>
+            </div>
+          )}
+
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 font-['Satoshi',sans-serif] leading-[1.08]">
             The Standardized IQ Test
           </h1>

@@ -8,12 +8,29 @@ interface CertificateModalProps {
   result: TestResult;
 }
 
+const CANDIDATE_NAME_KEY = 'certificate_candidate_name_v1';
+
 export const CertificateModal: React.FC<CertificateModalProps> = ({
   isOpen,
   onClose,
   result,
 }) => {
-  const [userName, setUserName] = useState('Assessment Candidate');
+  const [userName, setUserName] = useState<string>(() => {
+    try {
+      return localStorage.getItem(CANDIDATE_NAME_KEY) || 'Assessment Candidate';
+    } catch {
+      return 'Assessment Candidate';
+    }
+  });
+
+  const handleNameChange = (name: string) => {
+    setUserName(name);
+    try {
+      localStorage.setItem(CANDIDATE_NAME_KEY, name);
+    } catch {
+      // Ignore
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -55,7 +72,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
           <input
             type="text"
             value={userName}
-            onChange={e => setUserName(e.target.value)}
+            onChange={e => handleNameChange(e.target.value)}
             className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 focus:border-slate-900 focus:outline-none"
             placeholder="Candidate Name"
           />

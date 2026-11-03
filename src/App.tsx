@@ -16,6 +16,17 @@ import type { ExerciseType } from './types/exercises';
 import { calculateTestResults } from './utils/scoring';
 import { getHistory, saveResult, deleteResult, clearHistory } from './utils/history';
 
+const SEEN_IDS_KEY = 'cognitive_seen_question_ids_v1';
+
+function getInitialSeenIds(): number[] {
+  try {
+    const raw = localStorage.getItem(SEEN_IDS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function App() {
   const [currentTab, setCurrentTab] = useState<'assessment' | 'exercises'>('assessment');
   const [screen, setScreen] = useState<'welcome' | 'test' | 'results'>('welcome');
@@ -28,7 +39,7 @@ export function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [historyList, setHistoryList] = useState<TestResult[]>(() => getHistory());
   const [memoryBattery, setMemoryBattery] = useState<TripleMemoryBattery>(() => generateTripleMemoryBattery());
-  const [seenQuestionIds, setSeenQuestionIds] = useState<number[]>([]);
+  const [seenQuestionIds, setSeenQuestionIds] = useState<number[]>(() => getInitialSeenIds());
 
   // Start a new assessment test
   const handleStartAssessment = () => {
@@ -41,7 +52,13 @@ export function App() {
     const newPickedIds = battery.map(q => q.originalId || q.id);
     setSeenQuestionIds(prev => {
       const combined = [...prev, ...newPickedIds];
-      return combined.length > 35 ? newPickedIds : combined;
+      const updated = combined.length > 35 ? newPickedIds : combined;
+      try {
+        localStorage.setItem(SEEN_IDS_KEY, JSON.stringify(updated));
+      } catch {
+        // Ignore
+      }
+      return updated;
     });
 
     const initialResponses: Record<number, UserResponse> = {};
@@ -165,7 +182,12 @@ export function App() {
         {currentTab === 'assessment' && (
           <>
             {screen === 'welcome' && (
-              <WelcomeScreen onStart={handleStartAssessment} questionCount={20} />
+              <WelcomeScreen
+                onStart={handleStartAssessment}
+                questionCount={20}
+                latestResult={historyList[0] || null}
+                onOpenHistory={() => setIsHistoryOpen(true)}
+              />
             )}
 
             {screen === 'test' && activeQuestions.length > 0 && (

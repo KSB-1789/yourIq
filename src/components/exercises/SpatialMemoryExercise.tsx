@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft, RotateCcw, Brain } from 'lucide-react';
 import { zToPercentile } from '../../utils/scoring';
+import { saveGymScore } from '../../utils/gymStorage';
 
 interface SpatialMemoryProps {
   onBack: () => void;
@@ -88,6 +89,7 @@ export const SpatialMemoryExercise: React.FC<SpatialMemoryProps> = ({ onBack, on
 
       if (remainingLives <= 0) {
         setPhase('gameover');
+        saveGymScore('spatial_memory', 'Max Block Span', `${maxSpan} Units`, maxSpan);
         if (onFinish) onFinish(maxSpan, score);
       } else {
         setPhase('fail');

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { EXERCISES, type ExerciseType } from '../../types/exercises';
-import { Grid3X3, Binary, Rotate3D, Zap, ArrowRight, Brain, Award, ShieldCheck } from 'lucide-react';
+import { Grid3X3, Binary, Rotate3D, Zap, ArrowRight, Brain, Award, ShieldCheck, Trophy } from 'lucide-react';
+import { getGymRecords, type GymRecords } from '../../utils/gymStorage';
 
 interface ExerciseHubProps {
   onSelectExercise: (type: ExerciseType) => void;
@@ -8,6 +9,7 @@ interface ExerciseHubProps {
 }
 
 export const ExerciseHub: React.FC<ExerciseHubProps> = ({ onSelectExercise, onTakeTest }) => {
+  const [gymRecords] = useState<GymRecords>(() => getGymRecords());
   const getIcon = (id: ExerciseType) => {
     switch (id) {
       case 'spatial_memory':
@@ -76,9 +78,21 @@ export const ExerciseHub: React.FC<ExerciseHubProps> = ({ onSelectExercise, onTa
             </div>
 
             <div className="mt-8 pt-5 border-t border-slate-100">
-              <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
                 <span>Metric:</span>
                 <span className="font-semibold text-slate-800">{ex.metricLabel}</span>
+              </div>
+
+              {/* Personal Best Pill from localStorage */}
+              <div className="h-6 mb-4 flex items-center">
+                {gymRecords[ex.id] ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                    <Trophy className="h-3 w-3 text-amber-600" />
+                    <span>Personal Best: <strong>{gymRecords[ex.id]?.bestMetricValue}</strong></span>
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-slate-400">No session logged yet</span>
+                )}
               </div>
 
               <button
