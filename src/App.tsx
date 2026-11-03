@@ -15,6 +15,12 @@ import type { UserResponse, TestResult, Question, MemoryCheckpoint } from './typ
 import type { ExerciseType } from './types/exercises';
 import { calculateTestResults } from './utils/scoring';
 import { getHistory, saveResult, deleteResult, clearHistory } from './utils/history';
+import {
+  getActiveSession,
+  saveActiveSession,
+  clearActiveSession,
+  type ActiveTestSession,
+} from './utils/testStorage';
 
 const SEEN_IDS_KEY = 'cognitive_seen_question_ids_v1';
 
@@ -28,25 +34,40 @@ function getInitialSeenIds(): number[] {
 }
 
 export function App() {
+  // Check for any active in-progress assessment session
+  const [activeSession, setActiveSession] = useState<ActiveTestSession | null>(() => getActiveSession());
+  const [sessionId, setSessionId] = useState<string>(() => activeSession?.sessionId || `session_${Date.now()}`);
+
   const [currentTab, setCurrentTab] = useState<'assessment' | 'exercises'>('assessment');
-  const [screen, setScreen] = useState<'welcome' | 'test' | 'results'>('welcome');
+  // If user reloaded/refreshed during a test, restore straight into the assessment screen!
+  const [screen, setScreen] = useState<'welcome' | 'test' | 'results'>(() => {
+    return activeSession ? 'test' : 'welcome';
+  });
   const [activeExercise, setActiveExercise] = useState<ExerciseType | null>(null);
 
-  const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
-  const [responses, setResponses] = useState<Record<number, UserResponse>>({});
+  const [activeQuestions, setActiveQuestions] = useState<Question[]>(() => {
+    return activeSession ? activeSession.questions : [];
+  });
+  const [responses, setResponses] = useState<Record<number, UserResponse>>(() => {
+    return activeSession ? activeSession.responses : {};
+  });
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [historyList, setHistoryList] = useState<TestResult[]>(() => getHistory());
-  const [memoryBattery, setMemoryBattery] = useState<TripleMemoryBattery>(() => generateTripleMemoryBattery());
+  const [memoryBattery, setMemoryBattery] = useState<TripleMemoryBattery>(() => {
+    return activeSession ? activeSession.memoryBattery : generateTripleMemoryBattery();
+  });
   const [seenQuestionIds, setSeenQuestionIds] = useState<number[]>(() => getInitialSeenIds());
 
-  // Start a new assessment test
+  // Start a brand-new assessment test
   const handleStartAssessment = () => {
+    const newSessionId = `session_${Date.now()}`;
     const memBattery = generateTripleMemoryBattery();
     setMemoryBattery(memBattery);
     const battery = generateAssessmentBattery(seenQuestionIds);
     setActiveQuestions(battery);
+    setSessionId(newSessionId);
 
     // Track original question IDs that were picked to ensure freshness on retest
     const newPickedIds = battery.map(q => q.originalId || q.id);
@@ -71,36 +92,97 @@ export function App() {
       };
     });
     setResponses(initialResponses);
+
+    const initialSession: ActiveTestSession = {
+      sessionId: newSessionId,
+      questions: battery,
+      memoryBattery: memBattery,
+      responses: initialResponses,
+      stage: 'anchor1',
+      currentIndex: 0,
+      secondsElapsed: 0,
+      isPaused: false,
+      checkpoint1Choice: null,
+      checkpoint2Choice: null,
+      checkpoint3Choice: null,
+      lastUpdated: Date.now(),
+    };
+    saveActiveSession(initialSession);
+    setActiveSession(initialSession);
+
     setCurrentTab('assessment');
     setScreen('test');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Record an answer
-  const handleAnswer = (questionId: number, optionId: number) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        questionId,
-        selectedOption: optionId,
-      },
-    }));
+  // Resume in-progress assessment from localStorage
+  const handleResumeAssessment = () => {
+    const session = getActiveSession();
+    if (session) {
+      setActiveSession(session);
+      setSessionId(session.sessionId);
+      setActiveQuestions(session.questions);
+      setMemoryBattery(session.memoryBattery);
+      setResponses(session.responses);
+      setCurrentTab('assessment');
+      setScreen('test');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
-  // Toggle flag for review
+  // Discard in-progress assessment
+  const handleDiscardActiveAssessment = () => {
+    if (window.confirm('Discard your in-progress assessment? Your recorded answers and timer will be cleared.')) {
+      clearActiveSession();
+      setActiveSession(null);
+      setResponses({});
+      setActiveQuestions([]);
+    }
+  };
+
+  // Record an answer and immediately persist to storage
+  const handleAnswer = (questionId: number, optionId: number) => {
+    setResponses(prev => {
+      const updated = {
+        ...prev,
+        [questionId]: {
+          ...prev[questionId],
+          questionId,
+          selectedOption: optionId,
+        },
+      };
+      const session = getActiveSession();
+      if (session) {
+        session.responses = updated;
+        saveActiveSession(session);
+      }
+      return updated;
+    });
+  };
+
+  // Toggle flag for review and persist to storage
   const handleToggleFlag = (questionId: number) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        isFlagged: !prev[questionId]?.isFlagged,
-      },
-    }));
+    setResponses(prev => {
+      const updated = {
+        ...prev,
+        [questionId]: {
+          ...prev[questionId],
+          isFlagged: !prev[questionId]?.isFlagged,
+        },
+      };
+      const session = getActiveSession();
+      if (session) {
+        session.responses = updated;
+        saveActiveSession(session);
+      }
+      return updated;
+    });
   };
 
   // Submit test, calculate scores, and persist to history
   const handleSubmit = (totalTimeSeconds: number, checkpoints: MemoryCheckpoint[]) => {
+    clearActiveSession();
+    setActiveSession(null);
     const results = calculateTestResults(activeQuestions, responses, totalTimeSeconds, checkpoints);
     setTestResult(results);
     const updatedHistory = saveResult(results);
@@ -109,24 +191,17 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Reset back to welcome screen
-  const handleReset = () => {
-    setResponses({});
-    setTestResult(null);
-    setScreen('welcome');
-    setActiveExercise(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Safe navigation home with confirmation if taking test
+  // Safe navigation home (keeps active session saved)
   const handleGoHome = () => {
     if (screen === 'test') {
-      if (window.confirm('Return to home? Your current assessment progress will be lost.')) {
-        handleReset();
-      }
+      const current = getActiveSession();
+      setActiveSession(current);
+      setScreen('welcome');
     } else {
-      handleReset();
+      setScreen('welcome');
+      setActiveExercise(null);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Retake immediately with a new randomized set
@@ -154,6 +229,15 @@ export function App() {
     clearHistory();
     setHistoryList([]);
   };
+
+  const activeSessionInfo = activeSession
+    ? {
+        currentIndex: activeSession.currentIndex,
+        totalQuestions: activeSession.questions.length,
+        secondsElapsed: activeSession.secondsElapsed,
+        answeredCount: Object.values(responses || {}).filter(r => r.selectedOption !== null).length,
+      }
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 font-['Satoshi',system-ui,sans-serif] antialiased">
@@ -187,14 +271,26 @@ export function App() {
                 questionCount={20}
                 latestResult={historyList[0] || null}
                 onOpenHistory={() => setIsHistoryOpen(true)}
+                activeSessionInfo={activeSessionInfo}
+                onResume={handleResumeAssessment}
+                onDiscardActive={handleDiscardActiveAssessment}
               />
             )}
 
             {screen === 'test' && activeQuestions.length > 0 && (
               <TestScreen
+                key={sessionId}
+                sessionId={sessionId}
                 questions={activeQuestions}
                 memoryBattery={memoryBattery}
                 responses={responses}
+                initialStage={activeSession?.stage || 'anchor1'}
+                initialCurrentIndex={activeSession?.currentIndex || 0}
+                initialSecondsElapsed={activeSession?.secondsElapsed || 0}
+                initialIsPaused={activeSession?.isPaused ?? false}
+                initialCheckpoint1Choice={activeSession?.checkpoint1Choice ?? null}
+                initialCheckpoint2Choice={activeSession?.checkpoint2Choice ?? null}
+                initialCheckpoint3Choice={activeSession?.checkpoint3Choice ?? null}
                 onAnswer={handleAnswer}
                 onToggleFlag={handleToggleFlag}
                 onSubmit={handleSubmit}

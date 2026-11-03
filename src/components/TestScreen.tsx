@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Question, UserResponse, MemoryCheckpoint } from '../types';
 import type { TripleMemoryBattery } from '../data/questions';
+import { saveActiveSession, type TestStage } from '../utils/testStorage';
 import { MatrixCellSvg } from './MatrixSvg';
 import {
   Clock,
@@ -15,47 +16,132 @@ import {
   ArrowRight,
   Brain,
   Layers,
+  Sparkles,
 } from 'lucide-react';
 
-export type TestStage =
-  | 'anchor1'
-  | 'questions'
-  | 'checkpoint1'
-  | 'anchor2'
-  | 'checkpoint2'
-  | 'anchor3'
-  | 'checkpoint3';
+export type { TestStage };
 
 interface TestScreenProps {
+  sessionId?: string;
   questions: Question[];
   memoryBattery: TripleMemoryBattery;
   responses: Record<number, UserResponse>;
+  initialStage?: TestStage;
+  initialCurrentIndex?: number;
+  initialSecondsElapsed?: number;
+  initialIsPaused?: boolean;
+  initialCheckpoint1Choice?: number | null;
+  initialCheckpoint2Choice?: number | null;
+  initialCheckpoint3Choice?: number | null;
   onAnswer: (questionId: number, optionId: number) => void;
   onToggleFlag: (questionId: number) => void;
   onSubmit: (totalTimeSeconds: number, checkpoints: MemoryCheckpoint[]) => void;
 }
 
 export const TestScreen: React.FC<TestScreenProps> = ({
+  sessionId = 'default_session',
   questions,
   memoryBattery,
   responses,
+  initialStage = 'anchor1',
+  initialCurrentIndex = 0,
+  initialSecondsElapsed = 0,
+  initialIsPaused = false,
+  initialCheckpoint1Choice = null,
+  initialCheckpoint2Choice = null,
+  initialCheckpoint3Choice = null,
   onAnswer,
   onToggleFlag,
   onSubmit,
 }) => {
-  const [stage, setStage] = useState<TestStage>('anchor1');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [secondsElapsed, setSecondsElapsed] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [stage, setStage] = useState<TestStage>(initialStage);
+  const [currentIndex, setCurrentIndex] = useState(initialCurrentIndex);
+  const [secondsElapsed, setSecondsElapsed] = useState(initialSecondsElapsed);
+  const [isPaused, setIsPaused] = useState(initialIsPaused);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   // Checkpoint answers: option indices (0 to 3) or null
-  const [checkpoint1Choice, setCheckpoint1Choice] = useState<number | null>(null);
-  const [checkpoint2Choice, setCheckpoint2Choice] = useState<number | null>(null);
-  const [checkpoint3Choice, setCheckpoint3Choice] = useState<number | null>(null);
+  const [checkpoint1Choice, setCheckpoint1Choice] = useState<number | null>(initialCheckpoint1Choice);
+  const [checkpoint2Choice, setCheckpoint2Choice] = useState<number | null>(initialCheckpoint2Choice);
+  const [checkpoint3Choice, setCheckpoint3Choice] = useState<number | null>(initialCheckpoint3Choice);
 
   // Temporary selection inside current checkpoint screen
   const [tempCheckpointChoice, setTempCheckpointChoice] = useState<number | null>(null);
+
+  // Keep active test session continuously synchronized to localStorage
+  useEffect(() => {
+    saveActiveSession({
+      sessionId,
+      questions,
+      memoryBattery,
+      responses,
+      stage,
+      currentIndex,
+      secondsElapsed,
+      isPaused,
+      checkpoint1Choice,
+      checkpoint2Choice,
+      checkpoint3Choice,
+      lastUpdated: Date.now(),
+    });
+  }, [
+    sessionId,
+    questions,
+    memoryBattery,
+    responses,
+    stage,
+    currentIndex,
+    secondsElapsed,
+    isPaused,
+    checkpoint1Choice,
+    checkpoint2Choice,
+    checkpoint3Choice,
+  ]);
+
+  // Persist snapshot immediately on page refresh, tab switch, or browser close
+  useEffect(() => {
+    const handleUnloadOrHide = () => {
+      saveActiveSession({
+        sessionId,
+        questions,
+        memoryBattery,
+        responses,
+        stage,
+        currentIndex,
+        secondsElapsed,
+        isPaused: true, // Always paused upon browser reload/tab switch to protect user's time score
+        checkpoint1Choice,
+        checkpoint2Choice,
+        checkpoint3Choice,
+        lastUpdated: Date.now(),
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && stage === 'questions') {
+        setIsPaused(true);
+        handleUnloadOrHide();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleUnloadOrHide);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnloadOrHide);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [
+    sessionId,
+    questions,
+    memoryBattery,
+    responses,
+    stage,
+    currentIndex,
+    secondsElapsed,
+    checkpoint1Choice,
+    checkpoint2Choice,
+    checkpoint3Choice,
+  ]);
 
   const currentQuestion = questions[currentIndex] || questions[0];
   const userResp = responses[currentQuestion?.id];
@@ -629,13 +715,39 @@ export const TestScreen: React.FC<TestScreenProps> = ({
 
       {/* Main Question Workspace */}
       {isPaused ? (
-        <div className="mt-12 flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-16 text-center shadow-2xs">
-          <Clock className="h-12 w-12 text-slate-400 mb-4" />
-          <h3 className="text-2xl font-bold text-slate-900">Assessment Paused</h3>
-          <p className="mt-1 text-sm text-slate-500">Press resume when you are ready to continue.</p>
+        <div className="mt-12 flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-10 sm:p-16 text-center shadow-2xs animate-fade-in">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 mb-5 border border-amber-200 shadow-2xs">
+            <Clock className="h-8 w-8" />
+          </div>
+          <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-['Satoshi',sans-serif]">
+            Assessment Paused
+          </h3>
+          <p className="mt-2 text-sm text-slate-600 max-w-md">
+            Your progress is safely stored in local browser storage. Take a break, and resume whenever you are ready.
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-500">
+            <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-semibold text-slate-700">
+              Item {currentIndex + 1} of {questions.length}
+            </span>
+            <span>•</span>
+            <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-semibold text-slate-700">
+              {answeredCount} of {questions.length} Answered
+            </span>
+            <span>•</span>
+            <span className="rounded-lg bg-slate-100 px-3 py-1.5 font-semibold text-slate-700">
+              {formatTime(secondsElapsed)} Elapsed
+            </span>
+          </div>
+
+          <div className="mt-4 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+            <Sparkles className="h-3 w-3" />
+            <span>Progress automatically saved — safe to reload or return later</span>
+          </div>
+
           <button
             onClick={() => setIsPaused(false)}
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+            className="mt-8 inline-flex items-center gap-2.5 rounded-xl bg-slate-900 px-8 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 hover:scale-[1.02]"
           >
             <Play className="h-4 w-4 fill-current" />
             <span>Resume Assessment</span>

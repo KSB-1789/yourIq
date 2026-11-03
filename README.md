@@ -94,9 +94,13 @@ Targeted daily drills with specialized normative diagnostic reports:
 * **Mental Rotation Speed (Shepard-Metzler)**: 45-second sprint training 2D/3D rotational symmetry and parietal lobe transformation speed.
 * **Pattern Matrix Blitz**: Inductive problem throughput under rapid 45-second clock pressure.
 
-### 5. Persistent Local History
-* Automatically records completed assessments and workouts in browser `localStorage`.
-* Compare historical attempts, percentile trends, and domain performance over time.
+### 5. Persistent Local Storage & Session Recovery
+* **Active Assessment Auto-Save**: In-progress assessments are continuously synchronized to browser `localStorage`. Pausing the test, reloading the page (`F5`), switching tabs, or closing the browser preserves your exact question index, answered choices, flagged items, elapsed timer, and multi-phase memory state.
+* **Auto-Pause Time Safeguard**: On reload or tab return, the assessment safely opens in a paused state with an intuitive "Resume Assessment" action, protecting the candidate's timing score from loading delays.
+* **Returning Candidate Hub**: The home screen automatically detects saved active sessions, offering one-click resumption or clean resets, alongside historical score badges.
+* **Training Gym Personal Bests**: Automatically records and displays high scores across all four gym modules (Corsi block span, digit recall, rotation sprint, matrix blitz).
+* **Candidate Name Persistence**: Retains customized names on performance certificates across browser sessions.
+* **100% Privacy-Preserving**: All data remains strictly within the local client browser with zero network tracking, telemetry, or server database writes.
 
 ---
 

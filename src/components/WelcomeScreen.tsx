@@ -13,6 +13,7 @@ import {
   BarChart3,
   Brain,
   ShieldCheck,
+  Play,
 } from 'lucide-react';
 import { MatrixCellSvg } from './MatrixSvg';
 
@@ -21,6 +22,14 @@ interface WelcomeScreenProps {
   questionCount: number;
   latestResult?: TestResult | null;
   onOpenHistory?: () => void;
+  activeSessionInfo?: {
+    currentIndex: number;
+    totalQuestions: number;
+    secondsElapsed: number;
+    answeredCount: number;
+  } | null;
+  onResume?: () => void;
+  onDiscardActive?: () => void;
 }
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
@@ -28,6 +37,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   questionCount,
   latestResult,
   onOpenHistory,
+  activeSessionInfo,
+  onResume,
+  onDiscardActive,
 }) => {
   const [activeSampleTab, setActiveSampleTab] = useState<'matrix' | 'series'>('matrix');
   const [showDemoSolution, setShowDemoSolution] = useState(false);
@@ -96,13 +108,49 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             </span>
           </div>
 
+          {/* Active In-Progress Assessment Banner */}
+          {activeSessionInfo && onResume && (
+            <div className="mt-8 rounded-2xl border border-blue-200 bg-blue-50/80 p-5 sm:p-6 shadow-2xs animate-fade-in">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700">
+                  <Clock className="h-4 w-4" />
+                  <span>Assessment In Progress • Auto-Saved</span>
+                </div>
+                <span className="text-[11px] font-semibold text-blue-800 bg-blue-100/90 px-2.5 py-0.5 rounded-full">
+                  Item {activeSessionInfo.currentIndex + 1} of {activeSessionInfo.totalQuestions}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-slate-700 leading-relaxed">
+                You have an uncompleted assessment in progress ({activeSessionInfo.answeredCount} answered, {Math.floor(activeSessionInfo.secondsElapsed / 60)}m {activeSessionInfo.secondsElapsed % 60}s elapsed). You can resume right where you left off.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={onResume}
+                  className="group inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition"
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>Resume Assessment</span>
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </button>
+                {onDiscardActive && (
+                  <button
+                    onClick={onDiscardActive}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-rose-600 transition"
+                  >
+                    Discard & Start Fresh
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Primary CTA & Specs */}
           <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <button
               onClick={onStart}
               className="group inline-flex items-center gap-3 rounded-2xl bg-slate-900 px-8 py-4 text-base font-bold text-white shadow-sm transition hover:bg-slate-800 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
             >
-              <span>Begin 3-Phase Assessment</span>
+              <span>{activeSessionInfo ? 'Start New Assessment' : 'Begin 3-Phase Assessment'}</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
 
